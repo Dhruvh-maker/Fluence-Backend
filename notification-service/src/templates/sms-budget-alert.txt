@@ -1,0 +1,3 @@
+⚠️ Budget Alert: You've used {{percentageUsed}}% of your {{budgetCategory}} budget (${{amountUsed}}/${{budgetAmount}}). {{alertMessage}} View details: {{budgetLink}} - Fluence Pay
+
+

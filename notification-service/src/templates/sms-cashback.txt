@@ -1,0 +1,3 @@
+🎉 Cashback Alert! You earned ${{cashbackAmount}} cashback from {{merchantName}}. Your total cashback balance is now ${{totalBalance}}. View details: {{walletLink}} - Fluence Pay
+
+

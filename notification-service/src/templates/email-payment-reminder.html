@@ -1,0 +1,96 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Payment Reminder</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            line-height: 1.6;
+            color: #333;
+            max-width: 600px;
+            margin: 0 auto;
+            padding: 20px;
+        }
+        .header {
+            background: linear-gradient(135deg, #2196F3 0%, #1976D2 100%);
+            color: white;
+            padding: 30px;
+            text-align: center;
+            border-radius: 10px 10px 0 0;
+        }
+        .content {
+            background: #f9f9f9;
+            padding: 30px;
+            border-radius: 0 0 10px 10px;
+        }
+        .payment-info {
+            background: #e3f2fd;
+            border: 2px solid #2196F3;
+            border-radius: 10px;
+            padding: 20px;
+            margin: 20px 0;
+        }
+        .amount {
+            font-size: 1.5em;
+            font-weight: bold;
+            color: #2196F3;
+        }
+        .button {
+            display: inline-block;
+            background: #2196F3;
+            color: white;
+            padding: 12px 30px;
+            text-decoration: none;
+            border-radius: 5px;
+            margin: 20px 0;
+        }
+        .footer {
+            text-align: center;
+            margin-top: 30px;
+            color: #666;
+            font-size: 14px;
+        }
+    </style>
+</head>
+<body>
+    <div class="header">
+        <h1>💳 Payment Reminder</h1>
+        <p>Don't miss your upcoming payment</p>
+    </div>
+    
+    <div class="content">
+        <h2>Payment Due Soon</h2>
+        
+        <div class="payment-info">
+            <p><strong>Payment Details:</strong></p>
+            <p>Amount: <span class="amount">${{paymentAmount}}</span></p>
+            <p>Due Date: {{dueDate}}</p>
+            <p>Merchant: {{merchantName}}</p>
+            <p>Description: {{paymentDescription}}</p>
+        </div>
+        
+        <p>This is a friendly reminder that you have a payment due on {{dueDate}}.</p>
+        
+        <p>You can pay this amount using your Fluence Pay wallet or linked payment methods.</p>
+        
+        <a href="{{paymentLink}}" class="button">Pay Now</a>
+        
+        <p>If you've already made this payment, please ignore this reminder.</p>
+        
+        <p>Best regards,<br>The Fluence Pay Team</p>
+    </div>
+    
+    <div class="footer">
+        <p>© 2024 Fluence Pay. All rights reserved.</p>
+        <p>Questions? Contact us at support@fluencepay.com</p>
+    </div>
+</body>
+</html>
+
+
+
+
+
+

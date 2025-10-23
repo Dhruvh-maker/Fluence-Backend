@@ -1,0 +1,46 @@
+{
+  "name": "referral-service",
+  "version": "1.0.0",
+  "description": "Referral system service for Fluence Pay",
+  "main": "src/server.js",
+  "type": "module",
+  "scripts": {
+    "dev": "nodemon src/server.js",
+    "start": "node src/server.js",
+    "start:prod": "NODE_ENV=production node src/server.js",
+    "migrate:init": "psql \"%REFERRAL_DB_URI%\" -f sql/init.sql",
+    "test": "jest",
+    "lint": "eslint src/"
+  },
+  "dependencies": {
+    "express": "^4.19.2",
+    "cors": "^2.8.5",
+    "helmet": "^7.1.0",
+    "compression": "^1.7.4",
+    "morgan": "^1.10.0",
+    "express-rate-limit": "^7.4.0",
+    "dotenv": "^16.4.5",
+    "pg": "^8.12.0",
+    "jsonwebtoken": "^9.0.2",
+    "bcrypt": "^5.1.1",
+    "zod": "^3.23.8",
+    "http-status-codes": "^2.3.0",
+    "uuid": "^9.0.0",
+    "node-cron": "^3.0.3",
+    "redis": "^4.6.0"
+  },
+  "devDependencies": {
+    "nodemon": "^3.1.7",
+    "jest": "^29.0.0",
+    "supertest": "^6.0.0",
+    "eslint": "^8.0.0"
+  },
+  "keywords": [
+    "referral",
+    "referrals",
+    "invitation",
+    "rewards"
+  ],
+  "author": "Fluence Pay Team",
+  "license": "MIT"
+}

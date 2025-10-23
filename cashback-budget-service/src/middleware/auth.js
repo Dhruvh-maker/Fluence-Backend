@@ -1,0 +1,109 @@
+import { StatusCodes } from 'http-status-codes';
+import { ApiError } from './error.js';
+
+/**
+ * Verify JWT token from auth service
+ */
+export function verifyAuthToken() {
+  return async (req, res, next) => {
+    try {
+      const authHeader = req.headers.authorization || '';
+      const token = authHeader.startsWith('Bearer ') ? authHeader.slice(7) : null;
+      
+      if (!token) {
+        throw new ApiError(StatusCodes.UNAUTHORIZED, 'Authorization token required');
+      }
+
+      // In a real implementation, you would verify the JWT token
+      // For now, we'll extract user info from the token (this is a simplified approach)
+      // In production, you should verify the token signature and expiration
+      
+      try {
+        // This is a simplified approach - in production, use proper JWT verification
+        const payload = JSON.parse(Buffer.from(token.split('.')[1], 'base64').toString());
+        
+        if (!payload.sub || !payload.email) {
+          throw new ApiError(StatusCodes.UNAUTHORIZED, 'Invalid token payload');
+        }
+
+        req.user = {
+          id: payload.sub,
+          email: payload.email,
+          role: payload.role || 'user'
+        };
+
+        next();
+      } catch (jwtError) {
+        throw new ApiError(StatusCodes.UNAUTHORIZED, 'Invalid token format');
+      }
+    } catch (err) {
+      next(err);
+    }
+  };
+}
+
+/**
+ * Require admin role
+ */
+export function requireAdmin() {
+  return (req, res, next) => {
+    if (!req.user) {
+      return next(new ApiError(StatusCodes.UNAUTHORIZED, 'Authentication required'));
+    }
+
+    if (req.user.role !== 'admin') {
+      return next(new ApiError(StatusCodes.FORBIDDEN, 'Admin access required'));
+    }
+
+    next();
+  };
+}
+
+/**
+ * Require merchant role or admin
+ */
+export function requireMerchantOrAdmin() {
+  return (req, res, next) => {
+    if (!req.user) {
+      return next(new ApiError(StatusCodes.UNAUTHORIZED, 'Authentication required'));
+    }
+
+    if (!['merchant', 'admin'].includes(req.user.role)) {
+      return next(new ApiError(StatusCodes.FORBIDDEN, 'Merchant or admin access required'));
+    }
+
+    next();
+  };
+}
+
+/**
+ * Optional authentication (doesn't fail if no token)
+ */
+export function optionalAuth() {
+  return async (req, res, next) => {
+    try {
+      const authHeader = req.headers.authorization || '';
+      const token = authHeader.startsWith('Bearer ') ? authHeader.slice(7) : null;
+      
+      if (token) {
+        try {
+          const payload = JSON.parse(Buffer.from(token.split('.')[1], 'base64').toString());
+          
+          if (payload.sub && payload.email) {
+            req.user = {
+              id: payload.sub,
+              email: payload.email,
+              role: payload.role || 'user'
+            };
+          }
+        } catch (jwtError) {
+          // Ignore invalid tokens in optional auth
+        }
+      }
+
+      next();
+    } catch (err) {
+      next(err);
+    }
+  };
+}

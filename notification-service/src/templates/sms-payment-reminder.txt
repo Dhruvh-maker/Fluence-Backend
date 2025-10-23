@@ -1,0 +1,3 @@
+💳 Payment Reminder: ${{paymentAmount}} due to {{merchantName}} on {{dueDate}}. Pay now: {{paymentLink}} - Fluence Pay
+
+

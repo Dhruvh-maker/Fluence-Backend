@@ -1,0 +1,117 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Budget Alert</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            line-height: 1.6;
+            color: #333;
+            max-width: 600px;
+            margin: 0 auto;
+            padding: 20px;
+        }
+        .header {
+            background: linear-gradient(135deg, #ff9800 0%, #f57c00 100%);
+            color: white;
+            padding: 30px;
+            text-align: center;
+            border-radius: 10px 10px 0 0;
+        }
+        .content {
+            background: #f9f9f9;
+            padding: 30px;
+            border-radius: 0 0 10px 10px;
+        }
+        .budget-info {
+            background: #fff3e0;
+            border: 2px solid #ff9800;
+            border-radius: 10px;
+            padding: 20px;
+            margin: 20px 0;
+        }
+        .progress-bar {
+            background: #e0e0e0;
+            border-radius: 10px;
+            height: 20px;
+            margin: 10px 0;
+        }
+        .progress-fill {
+            background: linear-gradient(90deg, #4CAF50 0%, #ff9800 50%, #f44336 100%);
+            height: 100%;
+            border-radius: 10px;
+            width: {{percentageUsed}}%;
+        }
+        .button {
+            display: inline-block;
+            background: #ff9800;
+            color: white;
+            padding: 12px 30px;
+            text-decoration: none;
+            border-radius: 5px;
+            margin: 20px 0;
+        }
+        .footer {
+            text-align: center;
+            margin-top: 30px;
+            color: #666;
+            font-size: 14px;
+        }
+    </style>
+</head>
+<body>
+    <div class="header">
+        <h1>⚠️ Budget Alert</h1>
+        <p>You're approaching your budget limit</p>
+    </div>
+    
+    <div class="content">
+        <h2>Budget Alert for {{budgetName}}</h2>
+        
+        <div class="budget-info">
+            <p><strong>Budget Status:</strong></p>
+            <div class="progress-bar">
+                <div class="progress-fill"></div>
+            </div>
+            <p>Used: ${{amountUsed}} of ${{budgetAmount}} ({{percentageUsed}}%)</p>
+            <p>Remaining: ${{amountRemaining}}</p>
+        </div>
+        
+        <p><strong>Budget Details:</strong></p>
+        <ul>
+            <li>Category: {{budgetCategory}}</li>
+            <li>Period: {{budgetPeriod}}</li>
+            <li>Alert Threshold: {{alertThreshold}}%</li>
+        </ul>
+        
+        <p>You're {{percentageUsed}}% through your budget for {{budgetCategory}}. 
+        {% if percentageUsed >= 100 %}
+        You've exceeded your budget limit!
+        {% elif percentageUsed >= 90 %}
+        You're very close to your budget limit.
+        {% else %}
+        You're approaching your budget limit.
+        {% endif %}
+        </p>
+        
+        <a href="{{budgetLink}}" class="button">View Budget Details</a>
+        
+        <p>Consider adjusting your spending or increasing your budget if needed.</p>
+        
+        <p>Best regards,<br>The Fluence Pay Team</p>
+    </div>
+    
+    <div class="footer">
+        <p>© 2024 Fluence Pay. All rights reserved.</p>
+        <p>Manage your budgets at fluencepay.com</p>
+    </div>
+</body>
+</html>
+
+
+
+
+
+

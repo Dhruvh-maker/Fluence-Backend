@@ -1,0 +1,78 @@
+import { Router } from 'express';
+import { WalletController } from '../controllers/wallet.controller.js';
+import { BackgroundJobsService } from '../services/background-jobs.service.js';
+import { requireAuth } from '../middleware/auth.js';
+
+const router = Router();
+
+// All admin routes require authentication
+router.use(requireAuth());
+
+// Admin middleware - in production, you'd want to check for admin role
+const requireAdmin = (req, res, next) => {
+  // For now, we'll allow any authenticated user to access admin routes
+  // In production, you should check for admin role/permissions
+  next();
+};
+
+router.use(requireAdmin);
+
+// Admin wallet management
+router.get('/admin/pending-social-posts', WalletController.getPendingSocialPosts);
+router.put('/admin/verify-social-post/:transactionId', WalletController.verifySocialPost);
+
+// Background job management
+router.get('/admin/jobs/status', (req, res) => {
+  try {
+    const status = BackgroundJobsService.getJobStatus();
+    res.json({
+      success: true,
+      data: status
+    });
+  } catch (error) {
+    res.status(500).json({
+      success: false,
+      message: 'Failed to get job status',
+      error: error.message
+    });
+  }
+});
+
+router.post('/admin/jobs/trigger/:jobName', async (req, res) => {
+  try {
+    const { jobName } = req.params;
+    const result = await BackgroundJobsService.triggerJob(jobName);
+    
+    res.json({
+      success: true,
+      message: `Job ${jobName} triggered successfully`,
+      data: result
+    });
+  } catch (error) {
+    res.status(500).json({
+      success: false,
+      message: 'Failed to trigger job',
+      error: error.message
+    });
+  }
+});
+
+router.post('/admin/jobs/stop/:jobName', (req, res) => {
+  try {
+    const { jobName } = req.params;
+    BackgroundJobsService.stopJob(jobName);
+    
+    res.json({
+      success: true,
+      message: `Job ${jobName} stopped successfully`
+    });
+  } catch (error) {
+    res.status(500).json({
+      success: false,
+      message: 'Failed to stop job',
+      error: error.message
+    });
+  }
+});
+
+export default router;
