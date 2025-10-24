@@ -101,7 +101,6 @@ postgres_data/
 redis_data/
 
 # Database dumps
-*.sql
 *.dump
 
 # Temporary files
