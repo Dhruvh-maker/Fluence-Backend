@@ -16,7 +16,7 @@ export function requireAuth(allowedStatuses = ['active']) {
       if (!allowedStatuses.includes(user.status)) {
         return res.status(StatusCodes.FORBIDDEN).json({ error: `Account ${user.status}` });
       }
-      req.user = { id: user.id, email: user.email, status: user.status };
+      req.user = { id: user.id, email: user.email, status: user.status, role: user.role };
       next();
     } catch (err) {
       return res.status(StatusCodes.UNAUTHORIZED).json({ error: 'Unauthorized' });

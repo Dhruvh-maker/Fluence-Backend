@@ -1,9 +1,9 @@
 import { getPool } from '../db/pool.js';
 
-export async function createUser({ name, email, password_hash, auth_provider = 'password', provider_id = null, phone = null }) {
+export async function createUser({ name, email, password_hash, auth_provider = 'password', provider_id = null, phone = null, role = 'user' }) {
   const result = await getPool().query(
-    `INSERT INTO users (name, email, password_hash, auth_provider, provider_id, phone) VALUES ($1, $2, $3, $4, $5, $6) RETURNING *`,
-    [name, email.toLowerCase(), password_hash, auth_provider, provider_id, phone]
+    `INSERT INTO users (name, email, password_hash, auth_provider, provider_id, phone, role) VALUES ($1, $2, $3, $4, $5, $6, $7) RETURNING *`,
+    [name, email.toLowerCase(), password_hash, auth_provider, provider_id, phone, role]
   );
   return result.rows[0];
 }

@@ -2,20 +2,28 @@ import { Router } from 'express';
 import { WalletController } from '../controllers/wallet.controller.js';
 import { BackgroundJobsService } from '../services/background-jobs.service.js';
 import { requireAuth } from '../middleware/auth.js';
+import { createAdminUser, listUsers, updateUserRole } from '../controllers/admin.controller.js';
+import { getPool } from '../db/pool.js';
 
 const router = Router();
 
 // All admin routes require authentication
 router.use(requireAuth());
 
-// Admin middleware - in production, you'd want to check for admin role
+// Admin middleware - check for admin role
 const requireAdmin = (req, res, next) => {
-  // For now, we'll allow any authenticated user to access admin routes
-  // In production, you should check for admin role/permissions
+  if (req.user.role !== 'admin') {
+    return res.status(403).json({ error: 'Admin access required' });
+  }
   next();
 };
 
 router.use(requireAdmin);
+
+// Admin user management
+router.post('/users/admin', createAdminUser);
+router.get('/users', listUsers);
+router.put('/users/:userId/role', updateUserRole);
 
 // Admin wallet management
 router.get('/admin/pending-social-posts', WalletController.getPendingSocialPosts);
