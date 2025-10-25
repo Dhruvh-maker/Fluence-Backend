@@ -28,9 +28,9 @@ const transactionIdValidation = [
 ];
 
 const queryValidation = [
-  query('page').optional().isInt({ min: 1 }).withMessage('Page must be a positive integer'),
-  query('limit').optional().isInt({ min: 1, max: 100 }).withMessage('Limit must be between 1 and 100'),
-  query('status').optional().isIn(['pending', 'completed', 'failed', 'cancelled']).withMessage('Invalid status'),
+  query('page').optional().isInt({ min: 1 }).withMessage('Page must be a positive integer').toInt(),
+  query('limit').optional().isInt({ min: 1, max: 100 }).withMessage('Limit must be between 1 and 100').toInt(),
+  query('status').optional().isIn(['pending', 'processed', 'failed', 'disputed']).withMessage('Invalid status'),
   query('type').optional().isIn(['cashback', 'payment', 'refund']).withMessage('Invalid transaction type'),
   query('startDate').optional().isISO8601().withMessage('Start date must be a valid date'),
   query('endDate').optional().isISO8601().withMessage('End date must be a valid date')
@@ -43,12 +43,12 @@ const analyticsValidation = [
 ];
 
 // Routes
-router.post('/', verifyAuthToken, createTransactionValidation, TransactionController.createTransaction);
-router.get('/', verifyAuthToken, queryValidation, TransactionController.getTransactions);
-router.get('/analytics', verifyAuthToken, analyticsValidation, TransactionController.getTransactionAnalytics);
-router.get('/:id', verifyAuthToken, transactionIdValidation, TransactionController.getTransactionById);
-router.put('/:id', verifyAuthToken, updateTransactionValidation, TransactionController.updateTransaction);
-router.delete('/:id', verifyAuthToken, transactionIdValidation, TransactionController.deleteTransaction);
-router.post('/:id/process', verifyAuthToken, transactionIdValidation, TransactionController.processTransaction);
+router.post('/', verifyAuthToken(), createTransactionValidation, TransactionController.createTransaction);
+router.get('/', verifyAuthToken(), queryValidation, TransactionController.getTransactions);
+router.get('/analytics', verifyAuthToken(), analyticsValidation, TransactionController.getTransactionAnalytics);
+router.get('/:id', verifyAuthToken(), transactionIdValidation, TransactionController.getTransactionById);
+router.put('/:id', verifyAuthToken(), updateTransactionValidation, TransactionController.updateTransaction);
+router.delete('/:id', verifyAuthToken(), transactionIdValidation, TransactionController.deleteTransaction);
+router.post('/:id/process', verifyAuthToken(), transactionIdValidation, TransactionController.processTransaction);
 
 export default router;

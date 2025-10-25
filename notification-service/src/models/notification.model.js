@@ -16,9 +16,9 @@ export class NotificationModel {
     } = notificationData;
 
     const result = await pool.query(
-      `INSERT INTO notifications (user_id, type, title, message, data, sent_at) 
-       VALUES ($1, $2, $3, $4, $5, $6) RETURNING *`,
-      [userId, type, title, message, data, sentAt]
+      `INSERT INTO notifications (user_id, type, recipient, subject, message, metadata, sent_at, status) 
+       VALUES ($1, $2, $3, $4, $5, $6, $7, $8) RETURNING *`,
+      [userId, type, 'user@fluence.com', title, message, data, sentAt, 'sent']
     );
     return result.rows[0];
   }

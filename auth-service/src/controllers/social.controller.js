@@ -23,7 +23,7 @@ export async function loginWithFirebase(req, res, next) {
 
     let user = await findUserByProvider(mappedProvider, providerId);
     let isNewUser = false;
-    
+
     if (!user) {
       const existing = email ? await findUserByEmail(email) : null;
       if (existing) {
@@ -42,11 +42,23 @@ export async function loginWithFirebase(req, res, next) {
       }
     }
 
-    const jwt = signToken({ sub: user.id, email: user.email });
-    
+    // Debug: Log user data before JWT generation
+    console.log('🔐 Generating JWT for user:', {
+      id: user.id,
+      email: user.email,
+      role: user.role,
+      name: user.name
+    });
+
+    const jwt = signToken({ sub: user.id, email: user.email, role: user.role });
+
+    // Debug: Decode and log the JWT payload
+    const jwtPayload = JSON.parse(Buffer.from(jwt.split('.')[1], 'base64').toString());
+    console.log('📝 JWT Payload generated:', JSON.stringify(jwtPayload, null, 2));
+
     // Check if user needs to complete profile (new user or has placeholder name)
     const needsProfileCompletion = isNewUser || user.name === 'New User';
-    
+
     // Debug logging (remove in production)
     console.log('User login debug:', {
       isNewUser,
@@ -55,17 +67,17 @@ export async function loginWithFirebase(req, res, next) {
       provider: mappedProvider,
       providerId
     });
-    
+
     if (needsProfileCompletion) {
-      res.status(StatusCodes.OK).json({ 
-        user: { id: user.id, name: user.name, email: user.email }, 
+      res.status(StatusCodes.OK).json({
+        user: { id: user.id, name: user.name, email: user.email, role: user.role },
         token: jwt,
         needsProfileCompletion: true,
         message: 'Please complete your profile'
       });
     } else {
-      res.status(StatusCodes.OK).json({ 
-        user: { id: user.id, name: user.name, email: user.email }, 
+      res.status(StatusCodes.OK).json({
+        user: { id: user.id, name: user.name, email: user.email, role: user.role },
         token: jwt,
         needsProfileCompletion: false
       });

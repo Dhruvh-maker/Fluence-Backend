@@ -45,6 +45,13 @@ if (config.nodeEnv !== 'test') {
   app.use(morgan('combined'));
 }
 
+// Debug middleware to log all requests
+app.use((req, res, next) => {
+  console.log(`\n🔍 [REQUEST] ${req.method} ${req.path}`);
+  console.log('   Headers:', JSON.stringify(req.headers, null, 2));
+  next();
+});
+
 // Rate limiting
 const limiter = rateLimit({
   windowMs: config.rateLimitWindowMs,

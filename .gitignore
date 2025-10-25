@@ -107,6 +107,9 @@ redis_data/
 *.tmp
 *.temp
 
+# Seed files with sensitive data
+seed-admin-transactions.sql
+
 
 
 

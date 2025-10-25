@@ -22,7 +22,7 @@ export class TransactionController {
       };
 
       const transaction = await TransactionModel.create(transactionData);
-      
+
       res.status(201).json({
         success: true,
         data: transaction,
@@ -42,34 +42,184 @@ export class TransactionController {
    * Get all transactions
    */
   static async getTransactions(req, res) {
+    const startTime = Date.now();
+
+    // Validate request
+    const errors = validationResult(req);
+    if (!errors.isEmpty()) {
+      console.log('❌ [TRANSACTIONS] Validation errors:', errors.array());
+      return res.status(400).json({
+        success: false,
+        error: 'Validation failed',
+        details: errors.array()
+      });
+    }
+
     try {
-      const { page = 1, limit = 10, status, type, startDate, endDate } = req.query;
-      const options = {
-        page: parseInt(page),
-        limit: parseInt(limit),
-        status,
-        type,
-        startDate,
-        endDate
+      console.log('\n========================================');
+      console.log('💰 [TRANSACTIONS] GET /api/transactions');
+      console.log('========================================');
+      console.log('📋 Request Details:');
+      console.log('   User ID:', req.user?.id);
+      console.log('   User Email:', req.user?.email);
+      console.log('   User Role:', req.user?.role);
+      console.log('   Query params:', JSON.stringify(req.query, null, 2));
+
+      const { page = 1, limit = 100, status, type } = req.query;
+      const offset = (parseInt(page) - 1) * parseInt(limit);
+
+      console.log('🔍 Query Configuration:');
+      console.log('   Page:', page, '| Limit:', limit, '| Offset:', offset);
+      console.log('   Filters: status =', status || 'all', '| type =', type || 'all');
+
+      // Get cashback transactions with merchant and campaign data
+      const pool = await import('../config/database.js').then(m => m.getPool());
+
+      let query = `
+        SELECT 
+          ct.id,
+          ct.customer_id,
+          ct.merchant_id,
+          ct.campaign_id,
+          ct.original_transaction_id,
+          ct.cashback_amount,
+          ct.cashback_percentage,
+          ct.status,
+          ct.processed_at,
+          ct.created_at,
+          cc.campaign_name,
+          cc.cashback_percentage as campaign_rate
+        FROM cashback_transactions ct
+        LEFT JOIN cashback_campaigns cc ON ct.campaign_id = cc.id
+        WHERE ct.customer_id = $1
+      `;
+
+      const params = [req.user.id];
+      let paramCount = 1;
+
+      if (status) {
+        paramCount++;
+        query += ` AND ct.status = $${paramCount}`;
+        params.push(status);
+      }
+
+      query += ` ORDER BY ct.created_at DESC LIMIT $${paramCount + 1} OFFSET $${paramCount + 2}`;
+      params.push(parseInt(limit), offset);
+
+      console.log('📊 Executing query with', params.length, 'parameters');
+      const result = await pool.query(query, params);
+
+      // Get total count
+      let countQuery = 'SELECT COUNT(*) FROM cashback_transactions WHERE customer_id = $1';
+      const countParams = [req.user.id];
+
+      if (status) {
+        countQuery += ' AND status = $2';
+        countParams.push(status);
+      }
+
+      const countResult = await pool.query(countQuery, countParams);
+      const total = parseInt(countResult.rows[0].count);
+
+      // Get OVERALL analytics (unfiltered) for dashboard stats
+      const overallQuery = `
+        SELECT 
+          COUNT(*) as total,
+          SUM(CASE WHEN status = 'processed' THEN 1 ELSE 0 END) as processed,
+          SUM(CASE WHEN status = 'pending' THEN 1 ELSE 0 END) as pending,
+          SUM(CASE WHEN status = 'failed' THEN 1 ELSE 0 END) as failed,
+          SUM(CASE WHEN status = 'disputed' THEN 1 ELSE 0 END) as disputed,
+          SUM(cashback_amount) as total_volume
+        FROM cashback_transactions 
+        WHERE customer_id = $1
+      `;
+      const overallResult = await pool.query(overallQuery, [req.user.id]);
+      const overall = overallResult.rows[0];
+
+      const analytics = {
+        totalVolume: parseFloat(overall.total_volume || 0),
+        pending: parseInt(overall.pending || 0),
+        processed: parseInt(overall.processed || 0),
+        failed: parseInt(overall.failed || 0),
+        disputed: parseInt(overall.disputed || 0)
       };
 
-      const transactions = await TransactionModel.findAll(options);
-      
+      const overallTotal = parseInt(overall.total || 0);
+      const successRate = overallTotal > 0 ? ((analytics.processed / overallTotal) * 100).toFixed(0) : 0;
+
+      console.log('✅ Query Results:');
+      console.log('   Transactions found:', result.rows.length);
+      console.log('   Total in DB:', total);
+      console.log('   Total volume: ₹', analytics.totalVolume.toFixed(2));
+      console.log('   Success rate:', successRate + '%');
+      console.log('   Status breakdown:', {
+        pending: analytics.pending,
+        processed: analytics.processed,
+        failed: analytics.failed,
+        disputed: analytics.disputed
+      });
+
+      if (result.rows.length > 0) {
+        console.log('📝 Sample transaction:', {
+          id: result.rows[0].id,
+          amount: result.rows[0].cashback_amount,
+          status: result.rows[0].status,
+          campaign: result.rows[0].campaign_name
+        });
+      }
+
+      const responseTime = Date.now() - startTime;
+      console.log('⏱️  Response time:', responseTime + 'ms');
+      console.log('========================================\n');
+
       res.json({
         success: true,
-        data: transactions,
-        pagination: {
-          page: parseInt(page),
-          limit: parseInt(limit),
-          total: transactions.length
+        data: {
+          transactions: result.rows.map(t => ({
+            id: t.id,
+            userId: t.customer_id,
+            merchantId: t.merchant_id,
+            campaignId: t.campaign_id,
+            amount: parseFloat(t.cashback_amount),
+            currency: 'INR',
+            type: 'cashback',
+            status: t.status,
+            category: 'Cashback',
+            description: t.campaign_name || `Cashback ${t.cashback_percentage}%`,
+            merchantName: t.campaign_name || 'Unknown Business',
+            cashbackPercentage: parseFloat(t.cashback_percentage),
+            originalTransactionId: t.original_transaction_id,
+            processedAt: t.processed_at,
+            createdAt: t.created_at
+          })),
+          pagination: {
+            page: parseInt(page),
+            limit: parseInt(limit),
+            total,
+            totalPages: Math.ceil(total / parseInt(limit))
+          },
+          analytics: {
+            totalVolume: analytics.totalVolume,
+            successRate: parseInt(successRate),
+            pending: analytics.pending,
+            processed: analytics.processed,
+            failed: analytics.failed,
+            disputed: analytics.disputed
+          }
         }
       });
     } catch (error) {
-      console.error('Error fetching transactions:', error);
+      const responseTime = Date.now() - startTime;
+      console.error('❌ [TRANSACTIONS] Error after', responseTime + 'ms');
+      console.error('   Error type:', error.name);
+      console.error('   Error message:', error.message);
+      console.error('   Stack trace:', error.stack);
+      console.error('========================================\n');
+
       res.status(500).json({
         success: false,
         error: 'Failed to fetch transactions',
-        message: error.message
+        message: process.env.NODE_ENV === 'development' ? error.message : 'Internal server error'
       });
     }
   }
@@ -128,7 +278,7 @@ export class TransactionController {
       }
 
       const updatedTransaction = await TransactionModel.update(id, req.body);
-      
+
       res.json({
         success: true,
         data: updatedTransaction,
@@ -160,7 +310,7 @@ export class TransactionController {
       }
 
       await TransactionModel.delete(id);
-      
+
       res.json({
         success: true,
         message: 'Transaction deleted successfully'
@@ -191,7 +341,7 @@ export class TransactionController {
       }
 
       const processedTransaction = await TransactionModel.process(id);
-      
+
       res.json({
         success: true,
         data: processedTransaction,
@@ -212,6 +362,12 @@ export class TransactionController {
    */
   static async getTransactionAnalytics(req, res) {
     try {
+      console.log('\n========================================');
+      console.log('📊 [ANALYTICS] GET /api/transactions/analytics');
+      console.log('========================================');
+      console.log('Query params:', JSON.stringify(req.query, null, 2));
+      console.log('User ID:', req.user?.id);
+
       const { startDate, endDate, type } = req.query;
       const options = {
         startDate,
@@ -219,14 +375,20 @@ export class TransactionController {
         type
       };
 
+      console.log('Fetching analytics with options:', JSON.stringify(options, null, 2));
+
       const analytics = await TransactionModel.getAnalytics(options);
-      
+
+      console.log('✅ Analytics result:', JSON.stringify(analytics, null, 2));
+      console.log('========================================\n');
+
       res.json({
         success: true,
         data: analytics
       });
     } catch (error) {
-      console.error('Error fetching transaction analytics:', error);
+      console.error('❌ [ANALYTICS] Error:', error);
+      console.error('Stack:', error.stack);
       res.status(500).json({
         success: false,
         error: 'Failed to fetch transaction analytics',
