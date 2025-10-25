@@ -7,7 +7,31 @@ import { NotificationService } from '../services/notification.service.js';
 // Validation schemas
 const applicationSchema = z.object({
   businessName: z.string().min(1).max(255),
-  businessType: z.enum(['retail', 'restaurant', 'service', 'ecommerce', 'other']),
+  businessType: z.enum([
+    // Updated to match Flutter app categories
+    '🎨 Fashion & Beauty',
+    '🍔 Food & Beverage',
+    '🛒 Retail & Shopping',
+    '💻 Electronics & Tech',
+    '🏥 Health & Wellness',
+    '🏠 Home & Lifestyle',
+    '📚 Education & Books',
+    '🎮 Entertainment & Gaming',
+    '🚗 Automotive',
+    '✈️ Travel & Tourism',
+    '💪 Fitness & Sports',
+    '🐾 Pets & Animals',
+    '🔧 Services & Repair',
+    '📱 Telecom & Mobile',
+    '💎 Jewelry & Accessories',
+    '🎭 Arts & Crafts',
+    '🏗️ Construction & Hardware',
+    '📦 Wholesale & Distribution',
+    '🌱 Organic & Natural',
+    '🎉 Events & Celebrations',
+    // Keep legacy values for backward compatibility
+    'retail', 'restaurant', 'service', 'ecommerce', 'other'
+  ]),
   contactPerson: z.string().min(1).max(255),
   email: z.string().email().max(255),
   phone: z.string().min(1).max(20),
@@ -35,7 +59,7 @@ const statusUpdateSchema = z.object({
 export async function submitApplication(req, res, next) {
   try {
     const userId = req.user?.id;
-    
+
     if (!userId) {
       throw new ApiError(StatusCodes.UNAUTHORIZED, 'User not authenticated');
     }
@@ -85,7 +109,7 @@ export async function submitApplication(req, res, next) {
 export async function getUserApplications(req, res, next) {
   try {
     const userId = req.user?.id;
-    
+
     if (!userId) {
       throw new ApiError(StatusCodes.UNAUTHORIZED, 'User not authenticated');
     }
@@ -108,13 +132,13 @@ export async function getApplication(req, res, next) {
   try {
     const { applicationId } = req.params;
     const userId = req.user?.id;
-    
+
     if (!userId) {
       throw new ApiError(StatusCodes.UNAUTHORIZED, 'User not authenticated');
     }
 
     const application = await MerchantApplicationModel.getApplicationById(applicationId);
-    
+
     if (!application) {
       throw new ApiError(StatusCodes.NOT_FOUND, 'Application not found');
     }
@@ -146,7 +170,7 @@ export async function updateApplication(req, res, next) {
   try {
     const { applicationId } = req.params;
     const userId = req.user?.id;
-    
+
     if (!userId) {
       throw new ApiError(StatusCodes.UNAUTHORIZED, 'User not authenticated');
     }
@@ -154,7 +178,7 @@ export async function updateApplication(req, res, next) {
     const updateData = updateApplicationSchema.parse(req.body);
 
     const application = await MerchantApplicationModel.getApplicationById(applicationId);
-    
+
     if (!application) {
       throw new ApiError(StatusCodes.NOT_FOUND, 'Application not found');
     }
@@ -189,7 +213,7 @@ export async function deleteApplication(req, res, next) {
   try {
     const { applicationId } = req.params;
     const userId = req.user?.id;
-    
+
     if (!userId) {
       throw new ApiError(StatusCodes.UNAUTHORIZED, 'User not authenticated');
     }
