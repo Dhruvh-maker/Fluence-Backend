@@ -57,7 +57,35 @@ export async function loginWithFirebase(req, res, next) {
     console.log('📝 JWT Payload generated:', JSON.stringify(jwtPayload, null, 2));
 
     // Check if user needs to complete profile (new user or has placeholder name)
-    const needsProfileCompletion = isNewUser || user.name === 'New User';
+    // But first check if they already have a merchant application
+    let needsProfileCompletion = isNewUser || user.name === 'New User';
+
+    // If user seems to need profile completion, check if they already have a merchant application
+    if (needsProfileCompletion) {
+      try {
+        // Check merchant service for existing applications
+        const merchantServiceUrl = process.env.MERCHANT_SERVICE_URL || 'http://localhost:4003';
+        const response = await fetch(`${merchantServiceUrl}/api/applications`, {
+          method: 'GET',
+          headers: {
+            'Authorization': `Bearer ${jwt}`,
+            'Content-Type': 'application/json'
+          }
+        });
+
+        if (response.ok) {
+          const data = await response.json();
+          // If user has applications, they don't need profile completion
+          if (data.success && data.data && data.data.length > 0) {
+            needsProfileCompletion = false;
+            console.log('🔍 User has existing merchant applications, skipping profile completion');
+          }
+        }
+      } catch (error) {
+        console.warn('⚠️ Could not check merchant applications:', error.message);
+        // Continue with original logic if merchant service is unavailable
+      }
+    }
 
     // Debug logging (remove in production)
     console.log('User login debug:', {

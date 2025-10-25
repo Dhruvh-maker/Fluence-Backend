@@ -46,7 +46,31 @@ export function getConfig() {
   const app = {
     adminApprovalSLA: Number(process.env.ADMIN_APPROVAL_SLA_HOURS || 48), // 48 hours SLA
     maxApplicationsPerUser: Number(process.env.MAX_APPLICATIONS_PER_USER || 3),
-    supportedBusinessTypes: ['retail', 'restaurant', 'service', 'ecommerce', 'other']
+    supportedBusinessTypes: [
+      // Updated to match Flutter app categories
+      '🎨 Fashion & Beauty',
+      '🍔 Food & Beverage',
+      '🛒 Retail & Shopping',
+      '💻 Electronics & Tech',
+      '🏥 Health & Wellness',
+      '🏠 Home & Lifestyle',
+      '📚 Education & Books',
+      '🎮 Entertainment & Gaming',
+      '🚗 Automotive',
+      '✈️ Travel & Tourism',
+      '💪 Fitness & Sports',
+      '🐾 Pets & Animals',
+      '🔧 Services & Repair',
+      '📱 Telecom & Mobile',
+      '💎 Jewelry & Accessories',
+      '🎭 Arts & Crafts',
+      '🏗️ Construction & Hardware',
+      '📦 Wholesale & Distribution',
+      '🌱 Organic & Natural',
+      '🎉 Events & Celebrations',
+      // Keep legacy values for backward compatibility
+      'retail', 'restaurant', 'service', 'ecommerce', 'other'
+    ]
   };
 
   return {
