@@ -91,11 +91,19 @@ export class TransactionController {
           cc.cashback_percentage as campaign_rate
         FROM cashback_transactions ct
         LEFT JOIN cashback_campaigns cc ON ct.campaign_id = cc.id
-        WHERE ct.customer_id = $1
       `;
 
-      const params = [req.user.id];
-      let paramCount = 1;
+      const params = [];
+      let paramCount = 0;
+
+      // Admin sees all transactions, regular users see only their own
+      if (req.user.role !== 'admin') {
+        paramCount++;
+        query += ` WHERE ct.customer_id = $${paramCount}`;
+        params.push(req.user.id);
+      } else {
+        query += ` WHERE 1=1`; // Placeholder for admin to allow AND clauses
+      }
 
       if (status) {
         paramCount++;
@@ -110,19 +118,29 @@ export class TransactionController {
       const result = await pool.query(query, params);
 
       // Get total count
-      let countQuery = 'SELECT COUNT(*) FROM cashback_transactions WHERE customer_id = $1';
-      const countParams = [req.user.id];
+      let countQuery = 'SELECT COUNT(*) FROM cashback_transactions';
+      const countParams = [];
 
-      if (status) {
-        countQuery += ' AND status = $2';
-        countParams.push(status);
+      if (req.user.role !== 'admin') {
+        countQuery += ' WHERE customer_id = $1';
+        countParams.push(req.user.id);
+
+        if (status) {
+          countQuery += ' AND status = $2';
+          countParams.push(status);
+        }
+      } else {
+        if (status) {
+          countQuery += ' WHERE status = $1';
+          countParams.push(status);
+        }
       }
 
       const countResult = await pool.query(countQuery, countParams);
       const total = parseInt(countResult.rows[0].count);
 
       // Get OVERALL analytics (unfiltered) for dashboard stats
-      const overallQuery = `
+      let overallQuery = `
         SELECT 
           COUNT(*) as total,
           SUM(CASE WHEN status = 'processed' THEN 1 ELSE 0 END) as processed,
@@ -130,10 +148,16 @@ export class TransactionController {
           SUM(CASE WHEN status = 'failed' THEN 1 ELSE 0 END) as failed,
           SUM(CASE WHEN status = 'disputed' THEN 1 ELSE 0 END) as disputed,
           SUM(cashback_amount) as total_volume
-        FROM cashback_transactions 
-        WHERE customer_id = $1
+        FROM cashback_transactions
       `;
-      const overallResult = await pool.query(overallQuery, [req.user.id]);
+
+      const overallParams = [];
+      if (req.user.role !== 'admin') {
+        overallQuery += ' WHERE customer_id = $1';
+        overallParams.push(req.user.id);
+      }
+
+      const overallResult = await pool.query(overallQuery, overallParams);
       const overall = overallResult.rows[0];
 
       const analytics = {
