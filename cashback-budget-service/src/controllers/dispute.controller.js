@@ -22,7 +22,7 @@ export class DisputeController {
       };
 
       const dispute = await DisputeModel.create(disputeData);
-      
+
       res.status(201).json({
         success: true,
         data: dispute,
@@ -43,23 +43,25 @@ export class DisputeController {
    */
   static async getDisputes(req, res) {
     try {
-      const { page = 1, limit = 10, status, type } = req.query;
-      const options = {
-        page: parseInt(page),
-        limit: parseInt(limit),
-        status,
-        type
-      };
+      const { page = 1, limit = 50, status, priority } = req.query;
+      const offset = (parseInt(page) - 1) * parseInt(limit);
 
-      const disputes = await DisputeModel.findAll(options);
-      
+      const disputes = await DisputeModel.getAllDisputes(
+        parseInt(limit),
+        offset,
+        status,
+        priority
+      );
+
       res.json({
         success: true,
-        data: disputes,
-        pagination: {
-          page: parseInt(page),
-          limit: parseInt(limit),
-          total: disputes.length
+        data: {
+          disputes,
+          pagination: {
+            page: parseInt(page),
+            limit: parseInt(limit),
+            total: disputes.length
+          }
         }
       });
     } catch (error) {
@@ -78,7 +80,7 @@ export class DisputeController {
   static async getDisputeById(req, res) {
     try {
       const { id } = req.params;
-      const dispute = await DisputeModel.findById(id);
+      const dispute = await DisputeModel.getDisputeById(id);
 
       if (!dispute) {
         return res.status(404).json({
@@ -126,7 +128,7 @@ export class DisputeController {
       }
 
       const updatedDispute = await DisputeModel.update(id, req.body);
-      
+
       res.json({
         success: true,
         data: updatedDispute,
@@ -158,7 +160,7 @@ export class DisputeController {
       }
 
       await DisputeModel.delete(id);
-      
+
       res.json({
         success: true,
         message: 'Dispute deleted successfully'
@@ -180,8 +182,8 @@ export class DisputeController {
     try {
       const { id } = req.params;
       const { resolution, notes } = req.body;
-      
-      const dispute = await DisputeModel.findById(id);
+
+      const dispute = await DisputeModel.getDisputeById(id);
 
       if (!dispute) {
         return res.status(404).json({
@@ -190,8 +192,13 @@ export class DisputeController {
         });
       }
 
-      const resolvedDispute = await DisputeModel.resolve(id, resolution, notes);
-      
+      const resolvedDispute = await DisputeModel.updateDisputeStatus(
+        id,
+        'resolved',
+        notes || resolution,
+        req.user?.id
+      );
+
       res.json({
         success: true,
         data: resolvedDispute,
@@ -220,7 +227,7 @@ export class DisputeController {
       };
 
       const analytics = await DisputeModel.getAnalytics(options);
-      
+
       res.json({
         success: true,
         data: analytics

@@ -89,15 +89,35 @@ export class DisputeModel {
    */
   static async updateDisputeStatus(disputeId, status, resolutionNotes = null, assignedTo = null) {
     const pool = getPool();
+
+    // Set resolved_at if status is resolved or rejected
+    const resolvedAt = (status === 'resolved' || status === 'rejected') ? 'NOW()' : 'resolved_at';
+
+    // Update dispute status
     const result = await pool.query(
       `UPDATE disputes 
-       SET status = $2, resolution_notes = $3, assigned_to = $4, 
-           resolved_at = CASE WHEN $2 IN ('resolved', 'rejected') THEN NOW() ELSE resolved_at END,
+       SET status = $2, 
+           resolution_notes = $3, 
+           assigned_to = $4, 
+           resolved_at = ${resolvedAt},
            updated_at = NOW()
        WHERE id = $1 RETURNING *`,
       [disputeId, status, resolutionNotes, assignedTo]
     );
-    return result.rows[0] || null;
+
+    const dispute = result.rows[0];
+
+    // If dispute is resolved, update the transaction status to 'processed'
+    if (dispute && dispute.transaction_id && status === 'resolved') {
+      await pool.query(
+        `UPDATE cashback_transactions 
+         SET status = 'processed'
+         WHERE id = $1`,
+        [dispute.transaction_id]
+      );
+    }
+
+    return dispute || null;
   }
 
   /**

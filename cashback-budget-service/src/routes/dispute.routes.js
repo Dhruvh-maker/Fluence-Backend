@@ -47,12 +47,12 @@ const analyticsValidation = [
 ];
 
 // Routes
-router.post('/', verifyAuthToken, createDisputeValidation, DisputeController.createDispute);
-router.get('/', verifyAuthToken, queryValidation, DisputeController.getDisputes);
-router.get('/analytics', verifyAuthToken, analyticsValidation, DisputeController.getDisputeAnalytics);
-router.get('/:id', verifyAuthToken, disputeIdValidation, DisputeController.getDisputeById);
-router.put('/:id', verifyAuthToken, updateDisputeValidation, DisputeController.updateDispute);
-router.delete('/:id', verifyAuthToken, disputeIdValidation, DisputeController.deleteDispute);
-router.post('/:id/resolve', verifyAuthToken, resolveDisputeValidation, DisputeController.resolveDispute);
+router.post('/', verifyAuthToken(), createDisputeValidation, DisputeController.createDispute);
+router.get('/', verifyAuthToken(), queryValidation, DisputeController.getDisputes);
+router.get('/analytics', verifyAuthToken(), analyticsValidation, DisputeController.getDisputeAnalytics);
+router.get('/:id', verifyAuthToken(), disputeIdValidation, DisputeController.getDisputeById);
+router.put('/:id', verifyAuthToken(), updateDisputeValidation, DisputeController.updateDispute);
+router.delete('/:id', verifyAuthToken(), disputeIdValidation, DisputeController.deleteDispute);
+router.post('/:id/resolve', verifyAuthToken(), resolveDisputeValidation, DisputeController.resolveDispute);
 
 export default router;

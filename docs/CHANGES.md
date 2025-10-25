@@ -6,6 +6,37 @@ This document tracks all modifications made to the Fluence Pay backend for admin
 
 ## Current Session - October 25, 2025
 
+### Auth Service - Role Column Schema Fix
+
+**Issue:** Database schema missing role column while application code expects it
+
+#### Problem Identified:
+- Application code in `user.model.js`, `admin.controller.js`, and `auth.js` all reference `user.role`
+- JWT tokens include role in payload
+- Admin endpoints validate and update user roles
+- Database schema (`sql/init.sql`) was missing the `role` column definition
+
+#### Changes Made:
+1. **`sql/init.sql`**
+   - Added `role` column to `users` table
+   - Type: `TEXT NOT NULL DEFAULT 'user'`
+   - Constraint: `CHECK (role IN ('user','admin','merchant','moderator'))`
+   - Position: After `phone`, before `status`
+
+#### Supported Roles:
+- `user` - Default role for regular users
+- `merchant` - Business/merchant accounts
+- `admin` - System administrators
+- `moderator` - Content moderators
+
+#### Impact:
+- Fixes runtime errors when creating/updating users
+- Enables proper role-based access control
+- Allows differentiation between user and merchant accounts
+- Supports admin role management endpoints
+
+---
+
 ### Notification Service - Admin Notification Broadcasting
 
 **Feature:** Admin notification broadcasting system for Settings Tab
@@ -71,4 +102,4 @@ All previous changes have been moved to [CHANGES_ARCHIVE.md](./CHANGES_ARCHIVE.m
 
 ---
 
-**Last Updated:** October 25, 2025 - 15:10 IST
+**Last Updated:** October 25, 2025 - 16:45 IST
