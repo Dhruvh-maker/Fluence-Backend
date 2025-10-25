@@ -4,7 +4,7 @@ dotenv.config();
 
 export function getConfig() {
   const nodeEnv = process.env.NODE_ENV || 'development';
-  const port = Number(process.env.MERCHANT_ONBOARDING_PORT || 4002);
+  const port = Number(process.env.MERCHANT_ONBOARDING_PORT || 4003);
   const rateLimitWindowMs = Number(process.env.RATE_LIMIT_WINDOW_MS || 15 * 60 * 1000);
   const rateLimitMax = Number(process.env.RATE_LIMIT_MAX || 100);
 
@@ -49,15 +49,15 @@ export function getConfig() {
     supportedBusinessTypes: ['retail', 'restaurant', 'service', 'ecommerce', 'other']
   };
 
-  return { 
-    nodeEnv, 
-    port, 
-    db, 
-    jwt, 
-    email, 
-    services, 
+  return {
+    nodeEnv,
+    port,
+    db,
+    jwt,
+    email,
+    services,
     app,
-    rateLimitWindowMs, 
-    rateLimitMax 
+    rateLimitWindowMs,
+    rateLimitMax
   };
 }

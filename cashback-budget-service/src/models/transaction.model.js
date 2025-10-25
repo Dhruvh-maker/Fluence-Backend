@@ -2,6 +2,157 @@ import { getPool } from '../config/database.js';
 
 export class TransactionModel {
   /**
+   * Find all transactions with filters
+   */
+  static async findAll(options = {}) {
+    const pool = getPool();
+    const { page = 1, limit = 10, status, type, startDate, endDate } = options;
+    const offset = (page - 1) * limit;
+
+    let query = 'SELECT * FROM transactions WHERE 1=1';
+    const params = [];
+    let paramCount = 0;
+
+    if (status) {
+      paramCount++;
+      query += ` AND status = $${paramCount}`;
+      params.push(status);
+    }
+
+    if (type) {
+      paramCount++;
+      query += ` AND type = $${paramCount}`;
+      params.push(type);
+    }
+
+    if (startDate) {
+      paramCount++;
+      query += ` AND created_at >= $${paramCount}`;
+      params.push(startDate);
+    }
+
+    if (endDate) {
+      paramCount++;
+      query += ` AND created_at <= $${paramCount}`;
+      params.push(endDate);
+    }
+
+    query += ` ORDER BY created_at DESC LIMIT $${paramCount + 1} OFFSET $${paramCount + 2}`;
+    params.push(limit, offset);
+
+    const result = await pool.query(query, params);
+    return result.rows;
+  }
+
+  /**
+   * Find transaction by ID
+   */
+  static async findById(id) {
+    const pool = getPool();
+    const result = await pool.query('SELECT * FROM transactions WHERE id = $1', [id]);
+    return result.rows[0] || null;
+  }
+
+  /**
+   * Create a new transaction
+   */
+  static async create(transactionData) {
+    const pool = getPool();
+    const { userId, merchantId, campaignId, amount, type, status, description, metadata } = transactionData;
+
+    const result = await pool.query(
+      `INSERT INTO transactions (user_id, merchant_id, campaign_id, amount, type, status, description, metadata)
+       VALUES ($1, $2, $3, $4, $5, $6, $7, $8) RETURNING *`,
+      [userId, merchantId, campaignId, amount, type, status || 'pending', description, metadata]
+    );
+    return result.rows[0];
+  }
+
+  /**
+   * Update transaction
+   */
+  static async update(id, data) {
+    const pool = getPool();
+    const { amount, type, status, description, metadata } = data;
+
+    const result = await pool.query(
+      `UPDATE transactions 
+       SET amount = COALESCE($2, amount),
+           type = COALESCE($3, type),
+           status = COALESCE($4, status),
+           description = COALESCE($5, description),
+           metadata = COALESCE($6, metadata),
+           updated_at = NOW()
+       WHERE id = $1 RETURNING *`,
+      [id, amount, type, status, description, metadata]
+    );
+    return result.rows[0] || null;
+  }
+
+  /**
+   * Delete transaction
+   */
+  static async delete(id) {
+    const pool = getPool();
+    await pool.query('DELETE FROM transactions WHERE id = $1', [id]);
+  }
+
+  /**
+   * Process transaction
+   */
+  static async process(id) {
+    const pool = getPool();
+    const result = await pool.query(
+      `UPDATE transactions SET status = 'completed', updated_at = NOW() WHERE id = $1 RETURNING *`,
+      [id]
+    );
+    return result.rows[0] || null;
+  }
+
+  /**
+   * Get transaction analytics
+   */
+  static async getAnalytics(options = {}) {
+    const pool = getPool();
+    const { startDate, endDate, type } = options;
+
+    let query = `
+      SELECT 
+        COUNT(*) as total_transactions,
+        SUM(CASE WHEN status = 'completed' THEN 1 ELSE 0 END) as completed,
+        SUM(CASE WHEN status = 'pending' THEN 1 ELSE 0 END) as pending,
+        SUM(CASE WHEN status = 'failed' THEN 1 ELSE 0 END) as failed,
+        SUM(CASE WHEN status = 'completed' THEN amount ELSE 0 END) as total_volume,
+        ROUND(SUM(CASE WHEN status = 'completed' THEN 1 ELSE 0 END)::numeric / NULLIF(COUNT(*)::numeric, 0) * 100, 2) as success_rate
+      FROM transactions WHERE 1=1
+    `;
+
+    const params = [];
+    let paramCount = 0;
+
+    if (startDate) {
+      paramCount++;
+      query += ` AND created_at >= $${paramCount}`;
+      params.push(startDate);
+    }
+
+    if (endDate) {
+      paramCount++;
+      query += ` AND created_at <= $${paramCount}`;
+      params.push(endDate);
+    }
+
+    if (type) {
+      paramCount++;
+      query += ` AND type = $${paramCount}`;
+      params.push(type);
+    }
+
+    const result = await pool.query(query, params);
+    return result.rows[0] || {};
+  }
+
+  /**
    * Create a new cashback transaction
    */
   static async createTransaction(transactionData) {
@@ -145,7 +296,7 @@ export class TransactionModel {
         AVG(CASE WHEN status = 'processed' THEN cashback_amount ELSE NULL END) as avg_cashback_amount
       FROM cashback_transactions
     `;
-    
+
     const params = [];
     let paramCount = 0;
     const conditions = [];

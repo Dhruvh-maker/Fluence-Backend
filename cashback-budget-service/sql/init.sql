@@ -117,7 +117,7 @@ CREATE INDEX IF NOT EXISTS idx_cashback_transactions_campaign_id ON cashback_tra
 CREATE INDEX IF NOT EXISTS idx_cashback_transactions_customer_id ON cashback_transactions (customer_id);
 CREATE INDEX IF NOT EXISTS idx_cashback_transactions_status ON cashback_transactions (status);
 CREATE INDEX IF NOT EXISTS idx_cashback_transactions_created_at ON cashback_transactions (created_at);
-CREATE INDEX IF NOT EXISTS idx_cashback_transactions_error_type ON cashback_transactions (error_type);
+-- Index removed - error_type column doesn't exist yet
 CREATE INDEX IF NOT EXISTS idx_cashback_transactions_processed_at ON cashback_transactions (processed_at);
 
 CREATE INDEX IF NOT EXISTS idx_budget_alerts_merchant_id ON budget_alerts (merchant_id);
@@ -153,6 +153,7 @@ END;
 $$ LANGUAGE plpgsql;
 
 -- Trigger to automatically update budget balance
+DROP TRIGGER IF EXISTS trigger_update_budget_balance ON budget_transactions;
 CREATE TRIGGER trigger_update_budget_balance
   AFTER INSERT ON budget_transactions
   FOR EACH ROW
@@ -197,6 +198,7 @@ END;
 $$ LANGUAGE plpgsql;
 
 -- Trigger to check budget thresholds
+DROP TRIGGER IF EXISTS trigger_check_budget_thresholds ON budget_transactions;
 CREATE TRIGGER trigger_check_budget_thresholds
   AFTER INSERT ON budget_transactions
   FOR EACH ROW
@@ -221,6 +223,7 @@ END;
 $$ LANGUAGE plpgsql;
 
 -- Trigger to validate campaign dates
+DROP TRIGGER IF EXISTS trigger_validate_campaign_dates ON cashback_campaigns;
 CREATE TRIGGER trigger_validate_campaign_dates
   BEFORE INSERT OR UPDATE ON cashback_campaigns
   FOR EACH ROW
@@ -240,6 +243,7 @@ END;
 $$ LANGUAGE plpgsql;
 
 -- Trigger to update campaign status
+DROP TRIGGER IF EXISTS trigger_update_campaign_status ON cashback_campaigns;
 CREATE TRIGGER trigger_update_campaign_status
   BEFORE INSERT OR UPDATE ON cashback_campaigns
   FOR EACH ROW

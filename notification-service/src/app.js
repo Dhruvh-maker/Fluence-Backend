@@ -10,6 +10,7 @@ import { errorHandler, notFoundHandler } from './middleware/error.js';
 // Import routes
 import notificationRoutes from './routes/notification.routes.js';
 import contentRoutes from './routes/content.routes.js';
+import adminRoutes from './routes/admin.routes.js';
 // import templateRoutes from './routes/template.routes.js';
 
 const app = express();
@@ -75,6 +76,7 @@ app.get('/health', (req, res) => {
 // API routes
 app.use('/api/notifications', notificationRoutes);
 app.use('/api/content', contentRoutes);
+app.use('/api/admin/notifications', adminRoutes);
 // app.use('/api/templates', templateRoutes);
 
 // Root endpoint

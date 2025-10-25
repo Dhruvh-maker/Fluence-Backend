@@ -7,9 +7,10 @@ import { NotificationService } from '../services/notification.service.js';
 
 // Validation schemas
 const statusUpdateSchema = z.object({
-  status: z.enum(['approved', 'rejected']),
+  status: z.enum(['approved', 'rejected', 'suspended']),
   rejectionReason: z.string().optional(),
-  adminNotes: z.string().optional()
+  adminNotes: z.string().optional(),
+  notes: z.string().optional()
 });
 
 const paginationSchema = z.object({
@@ -74,7 +75,7 @@ export async function getApplication(req, res, next) {
     const { applicationId } = req.params;
 
     const application = await MerchantApplicationModel.getApplicationById(applicationId);
-    
+
     if (!application) {
       throw new ApiError(StatusCodes.NOT_FOUND, 'Application not found');
     }
@@ -99,51 +100,103 @@ export async function getApplication(req, res, next) {
  */
 export async function updateApplicationStatus(req, res, next) {
   try {
+    console.log('🔄 [STATUS UPDATE] Request received');
+    console.log('   Application ID:', req.params.applicationId);
+    console.log('   Request body:', JSON.stringify(req.body, null, 2));
+    console.log('   Admin user:', req.user);
+
     const { applicationId } = req.params;
     const adminId = req.user?.id;
-    
+
     if (!adminId) {
+      console.log('❌ [STATUS UPDATE] Admin not authenticated');
       throw new ApiError(StatusCodes.UNAUTHORIZED, 'Admin not authenticated');
     }
 
-    const { status, rejectionReason, adminNotes } = statusUpdateSchema.parse(req.body);
+    console.log('📝 [STATUS UPDATE] Parsing request body with schema');
+    let parsedData;
+    try {
+      parsedData = statusUpdateSchema.parse(req.body);
+      console.log('✅ [STATUS UPDATE] Schema validation passed:', parsedData);
+    } catch (validationError) {
+      console.log('❌ [STATUS UPDATE] Schema validation failed:', validationError);
+      throw validationError;
+    }
 
+    const { status, rejectionReason, adminNotes } = parsedData;
+
+    console.log(`🔍 [STATUS UPDATE] Fetching application ${applicationId}`);
     const application = await MerchantApplicationModel.getApplicationById(applicationId);
-    
+
     if (!application) {
+      console.log('❌ [STATUS UPDATE] Application not found');
       throw new ApiError(StatusCodes.NOT_FOUND, 'Application not found');
     }
 
-    if (application.status !== 'pending') {
-      throw new ApiError(StatusCodes.BAD_REQUEST, 'Application is not pending review');
+    console.log('📋 [STATUS UPDATE] Current application status:', application.status);
+    console.log('📋 [STATUS UPDATE] Requested new status:', status);
+
+    // Allow status updates based on current status
+    if (status === 'suspended') {
+      console.log('🚫 [STATUS UPDATE] Processing suspend request');
+      // Can only suspend approved merchants
+      if (application.status !== 'approved') {
+        console.log(`❌ [STATUS UPDATE] Cannot suspend - current status is '${application.status}', must be 'approved'`);
+        throw new ApiError(StatusCodes.BAD_REQUEST, 'Can only suspend approved merchants');
+      }
+      console.log('✅ [STATUS UPDATE] Suspend validation passed');
+    } else {
+      console.log('📝 [STATUS UPDATE] Processing approve/reject request');
+      // Approve/reject only works for pending applications
+      if (application.status !== 'pending') {
+        console.log(`❌ [STATUS UPDATE] Cannot approve/reject - current status is '${application.status}', must be 'pending'`);
+        throw new ApiError(StatusCodes.BAD_REQUEST, 'Application is not pending review');
+      }
+      console.log('✅ [STATUS UPDATE] Approve/reject validation passed');
     }
+
+    const notes = req.body.notes || adminNotes;
+    console.log('💾 [STATUS UPDATE] Updating application status in database');
+    console.log('   Status:', status);
+    console.log('   Admin ID:', adminId);
+    console.log('   Notes:', notes);
 
     const updatedApplication = await MerchantApplicationModel.updateApplicationStatus(
       applicationId,
       status,
       adminId,
       rejectionReason,
-      adminNotes
+      notes
     );
+
+    console.log('✅ [STATUS UPDATE] Database update successful');
+    console.log('   Updated application:', JSON.stringify(updatedApplication, null, 2));
 
     // Send appropriate notification
     try {
       if (status === 'approved') {
+        console.log('📧 [STATUS UPDATE] Sending approval notification');
         await NotificationService.sendApplicationApprovedNotification(updatedApplication);
       } else if (status === 'rejected') {
+        console.log('📧 [STATUS UPDATE] Sending rejection notification');
         await NotificationService.sendApplicationRejectedNotification(updatedApplication, rejectionReason);
+      } else if (status === 'suspended') {
+        console.log(`🚫 [STATUS UPDATE] Merchant ${applicationId} suspended by admin ${adminId}`);
       }
     } catch (notificationError) {
-      console.warn('Failed to send notification:', notificationError.message);
+      console.warn('⚠️ [STATUS UPDATE] Failed to send notification:', notificationError.message);
       // Don't fail the status update if notification fails
     }
 
+    console.log('✅ [STATUS UPDATE] Request completed successfully');
     res.status(StatusCodes.OK).json({
       success: true,
       data: updatedApplication,
       message: `Application ${status} successfully`
     });
   } catch (err) {
+    console.log('❌ [STATUS UPDATE] Error occurred:', err.message);
+    console.log('   Error stack:', err.stack);
     if (err instanceof z.ZodError) {
       return next(new ApiError(StatusCodes.BAD_REQUEST, 'Invalid status update data', err.flatten()));
     }

@@ -4,7 +4,7 @@ dotenv.config();
 
 export function getConfig() {
   const nodeEnv = process.env.NODE_ENV || 'development';
-  const port = Number(process.env.CASHBACK_BUDGET_PORT || 4003);
+  const port = Number(process.env.CASHBACK_BUDGET_PORT || 4002);
   const rateLimitWindowMs = Number(process.env.RATE_LIMIT_WINDOW_MS || 15 * 60 * 1000);
   const rateLimitMax = Number(process.env.RATE_LIMIT_MAX || 100);
 
@@ -61,16 +61,16 @@ export function getConfig() {
     defaultCampaignName: 'Cashback Campaign'
   };
 
-  return { 
-    nodeEnv, 
-    port, 
-    db, 
-    jwt, 
-    email, 
-    services, 
+  return {
+    nodeEnv,
+    port,
+    db,
+    jwt,
+    email,
+    services,
     financial,
     campaign,
-    rateLimitWindowMs, 
-    rateLimitMax 
+    rateLimitWindowMs,
+    rateLimitMax
   };
 }

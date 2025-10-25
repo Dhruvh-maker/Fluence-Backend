@@ -18,7 +18,7 @@ CREATE TABLE IF NOT EXISTS merchant_applications (
   business_license VARCHAR(100),
   tax_id VARCHAR(100),
   bank_account_details JSONB,
-  status VARCHAR(20) DEFAULT 'pending' CHECK (status IN ('pending', 'approved', 'rejected')),
+  status VARCHAR(20) DEFAULT 'pending' CHECK (status IN ('pending', 'approved', 'rejected', 'suspended')),
   submitted_at TIMESTAMPTZ DEFAULT NOW(),
   reviewed_at TIMESTAMPTZ,
   reviewed_by UUID, -- References auth service admin users

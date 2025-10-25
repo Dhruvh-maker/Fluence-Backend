@@ -9,7 +9,7 @@ export function verifyAuthToken() {
     try {
       const authHeader = req.headers.authorization || '';
       const token = authHeader.startsWith('Bearer ') ? authHeader.slice(7) : null;
-      
+
       if (!token) {
         throw new ApiError(StatusCodes.UNAUTHORIZED, 'Authorization token required');
       }
@@ -17,11 +17,11 @@ export function verifyAuthToken() {
       // In a real implementation, you would verify the JWT token
       // For now, we'll extract user info from the token (this is a simplified approach)
       // In production, you should verify the token signature and expiration
-      
+
       try {
         // This is a simplified approach - in production, use proper JWT verification
         const payload = JSON.parse(Buffer.from(token.split('.')[1], 'base64').toString());
-        
+
         if (!payload.sub || !payload.email) {
           throw new ApiError(StatusCodes.UNAUTHORIZED, 'Invalid token payload');
         }
@@ -67,11 +67,11 @@ export function optionalAuth() {
     try {
       const authHeader = req.headers.authorization || '';
       const token = authHeader.startsWith('Bearer ') ? authHeader.slice(7) : null;
-      
+
       if (token) {
         try {
           const payload = JSON.parse(Buffer.from(token.split('.')[1], 'base64').toString());
-          
+
           if (payload.sub && payload.email) {
             req.user = {
               id: payload.sub,

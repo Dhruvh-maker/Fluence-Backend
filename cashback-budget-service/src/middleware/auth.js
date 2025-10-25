@@ -5,25 +5,44 @@ import { ApiError } from './error.js';
  * Verify JWT token from auth service
  */
 export function verifyAuthToken() {
-  return async (req, res, next) => {
+  return (req, res, next) => {
     try {
+      console.log('🔐 [AUTH] Verifying token for:', req.method, req.path);
+      console.log('   Headers:', Object.keys(req.headers));
+
       const authHeader = req.headers.authorization || '';
+      console.log('   Auth header:', authHeader ? 'Present' : 'Missing');
+
       const token = authHeader.startsWith('Bearer ') ? authHeader.slice(7) : null;
-      
+
       if (!token) {
-        throw new ApiError(StatusCodes.UNAUTHORIZED, 'Authorization token required');
+        console.log('❌ [AUTH] No token provided');
+        return res.status(StatusCodes.UNAUTHORIZED).json({
+          success: false,
+          error: 'Authorization token required'
+        });
       }
 
-      // In a real implementation, you would verify the JWT token
-      // For now, we'll extract user info from the token (this is a simplified approach)
-      // In production, you should verify the token signature and expiration
-      
       try {
-        // This is a simplified approach - in production, use proper JWT verification
+        // Parse JWT token (simplified - in production use jsonwebtoken library)
         const payload = JSON.parse(Buffer.from(token.split('.')[1], 'base64').toString());
-        
+        console.log('📝 [AUTH] Token payload:', { sub: payload.sub, email: payload.email, role: payload.role });
+
         if (!payload.sub || !payload.email) {
-          throw new ApiError(StatusCodes.UNAUTHORIZED, 'Invalid token payload');
+          console.log('❌ [AUTH] Invalid payload - missing sub or email');
+          return res.status(StatusCodes.UNAUTHORIZED).json({
+            success: false,
+            error: 'Invalid token payload'
+          });
+        }
+
+        // Check token expiration
+        if (payload.exp && payload.exp < Date.now() / 1000) {
+          console.log('❌ [AUTH] Token expired');
+          return res.status(StatusCodes.UNAUTHORIZED).json({
+            success: false,
+            error: 'Token expired'
+          });
         }
 
         req.user = {
@@ -32,12 +51,21 @@ export function verifyAuthToken() {
           role: payload.role || 'user'
         };
 
+        console.log('✅ [AUTH] User authenticated:', { id: req.user.id, email: req.user.email, role: req.user.role });
         next();
       } catch (jwtError) {
-        throw new ApiError(StatusCodes.UNAUTHORIZED, 'Invalid token format');
+        console.log('❌ [AUTH] JWT parse error:', jwtError.message);
+        return res.status(StatusCodes.UNAUTHORIZED).json({
+          success: false,
+          error: 'Invalid token format'
+        });
       }
     } catch (err) {
-      next(err);
+      console.log('❌ [AUTH] Auth error:', err.message);
+      return res.status(500).json({
+        success: false,
+        error: 'Authentication failed'
+      });
     }
   };
 }
@@ -84,11 +112,11 @@ export function optionalAuth() {
     try {
       const authHeader = req.headers.authorization || '';
       const token = authHeader.startsWith('Bearer ') ? authHeader.slice(7) : null;
-      
+
       if (token) {
         try {
           const payload = JSON.parse(Buffer.from(token.split('.')[1], 'base64').toString());
-          
+
           if (payload.sub && payload.email) {
             req.user = {
               id: payload.sub,

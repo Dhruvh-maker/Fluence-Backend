@@ -31,6 +31,8 @@ CREATE TABLE IF NOT EXISTS notifications (
   sent_at TIMESTAMPTZ,
   delivered_at TIMESTAMPTZ,
   read_at TIMESTAMPTZ,
+  opened_at TIMESTAMPTZ, -- When user opened the notification
+  clicked_at TIMESTAMPTZ, -- When user clicked on the notification
   error_message TEXT,
   metadata JSONB, -- Additional data like campaign info, user preferences, etc.
   retry_count INTEGER DEFAULT 0,
