@@ -32,11 +32,11 @@ const queryValidation = [
 ];
 
 // Routes
-router.post('/', verifyAuthToken, createBudgetValidation, BudgetController.createBudget);
-router.get('/', verifyAuthToken, queryValidation, BudgetController.getUserBudgets);
-router.get('/:id', verifyAuthToken, budgetIdValidation, BudgetController.getBudgetById);
-router.put('/:id', verifyAuthToken, updateBudgetValidation, BudgetController.updateBudget);
-router.delete('/:id', verifyAuthToken, budgetIdValidation, BudgetController.deleteBudget);
-router.get('/:id/analytics', verifyAuthToken, budgetIdValidation, BudgetController.getBudgetAnalytics);
+router.post('/', verifyAuthToken(), createBudgetValidation, BudgetController.createBudget);
+router.get('/', verifyAuthToken(), queryValidation, BudgetController.getUserBudgets);
+router.get('/:id', verifyAuthToken(), budgetIdValidation, BudgetController.getBudgetById);
+router.put('/:id', verifyAuthToken(), updateBudgetValidation, BudgetController.updateBudget);
+router.delete('/:id', verifyAuthToken(), budgetIdValidation, BudgetController.deleteBudget);
+router.get('/:id/analytics', verifyAuthToken(), budgetIdValidation, BudgetController.getBudgetAnalytics);
 
 export default router;

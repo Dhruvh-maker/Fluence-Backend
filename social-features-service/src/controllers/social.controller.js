@@ -10,19 +10,19 @@ export class SocialController {
     try {
       const userId = req.user.id;
       const { platformId, platformUserId, username, displayName, profilePictureUrl, accessToken, refreshToken, tokenExpiresAt } = req.body;
-      
+
       if (!platformId || !platformUserId || !accessToken) {
         throw new ApiError(StatusCodes.BAD_REQUEST, 'Platform ID, platform user ID, and access token are required');
       }
-      
+
       const pool = getPool();
-      
+
       // Check if account is already connected
       const existingAccount = await pool.query(
         'SELECT * FROM social_accounts WHERE user_id = $1 AND platform_id = $2',
         [userId, platformId]
       );
-      
+
       if (existingAccount.rows.length > 0) {
         // Update existing account
         const updatedAccount = await pool.query(
@@ -34,14 +34,14 @@ export class SocialController {
            RETURNING *`,
           [userId, platformId, platformUserId, username, displayName, profilePictureUrl, accessToken, refreshToken, tokenExpiresAt]
         );
-        
+
         return res.status(StatusCodes.OK).json({
           success: true,
           data: updatedAccount.rows[0],
           message: 'Social account updated successfully'
         });
       }
-      
+
       // Create new social account
       const newAccount = await pool.query(
         `INSERT INTO social_accounts (
@@ -50,7 +50,7 @@ export class SocialController {
         ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9) RETURNING *`,
         [userId, platformId, platformUserId, username, displayName, profilePictureUrl, accessToken, refreshToken, tokenExpiresAt]
       );
-      
+
       res.status(StatusCodes.CREATED).json({
         success: true,
         data: newAccount.rows[0],
@@ -68,7 +68,7 @@ export class SocialController {
     try {
       const userId = req.user.id;
       const pool = getPool();
-      
+
       const accounts = await pool.query(
         `SELECT sa.*, sp.name as platform_name, sp.display_name as platform_display_name
          FROM social_accounts sa
@@ -77,7 +77,7 @@ export class SocialController {
          ORDER BY sa.created_at DESC`,
         [userId]
       );
-      
+
       res.status(StatusCodes.OK).json({
         success: true,
         data: accounts.rows
@@ -95,16 +95,16 @@ export class SocialController {
       const userId = req.user.id;
       const { accountId } = req.params;
       const pool = getPool();
-      
+
       const result = await pool.query(
         'UPDATE social_accounts SET is_connected = false, updated_at = NOW() WHERE id = $1 AND user_id = $2 RETURNING *',
         [accountId, userId]
       );
-      
+
       if (result.rows.length === 0) {
         throw new ApiError(StatusCodes.NOT_FOUND, 'Social account not found');
       }
-      
+
       res.status(StatusCodes.OK).json({
         success: true,
         data: result.rows[0],
@@ -122,30 +122,30 @@ export class SocialController {
     try {
       const userId = req.user.id;
       const { socialAccountId, content, mediaUrls, postType, scheduledAt } = req.body;
-      
+
       if (!socialAccountId || !content) {
         throw new ApiError(StatusCodes.BAD_REQUEST, 'Social account ID and content are required');
       }
-      
+
       const pool = getPool();
-      
+
       // Verify social account belongs to user
       const account = await pool.query(
         'SELECT * FROM social_accounts WHERE id = $1 AND user_id = $2 AND is_connected = true',
         [socialAccountId, userId]
       );
-      
+
       if (account.rows.length === 0) {
         throw new ApiError(StatusCodes.NOT_FOUND, 'Social account not found or not connected');
       }
-      
+
       const post = await pool.query(
         `INSERT INTO social_posts (
           user_id, social_account_id, content, media_urls, post_type, scheduled_at
         ) VALUES ($1, $2, $3, $4, $5, $6) RETURNING *`,
         [userId, socialAccountId, content, mediaUrls || [], postType || 'text', scheduledAt]
       );
-      
+
       res.status(StatusCodes.CREATED).json({
         success: true,
         data: post.rows[0],
@@ -164,7 +164,7 @@ export class SocialController {
       const userId = req.user.id;
       const { limit = 50, offset = 0, status, postType } = req.query;
       const pool = getPool();
-      
+
       let query = `
         SELECT sp.*, sa.platform_user_id, sa.username, sa.display_name, 
                pl.name as platform_name, pl.display_name as platform_display_name
@@ -175,24 +175,24 @@ export class SocialController {
       `;
       let params = [userId];
       let paramCount = 1;
-      
+
       if (status) {
         paramCount++;
         query += ` AND sp.status = $${paramCount}`;
         params.push(status);
       }
-      
+
       if (postType) {
         paramCount++;
         query += ` AND sp.post_type = $${paramCount}`;
         params.push(postType);
       }
-      
+
       query += ` ORDER BY sp.created_at DESC LIMIT $${paramCount + 1} OFFSET $${paramCount + 2}`;
       params.push(parseInt(limit), parseInt(offset));
-      
+
       const posts = await pool.query(query, params);
-      
+
       res.status(StatusCodes.OK).json({
         success: true,
         data: posts.rows,
@@ -216,18 +216,18 @@ export class SocialController {
       const { postId } = req.params;
       const { content, mediaUrls, postType, status } = req.body;
       const pool = getPool();
-      
+
       const result = await pool.query(
         `UPDATE social_posts 
          SET content = $3, media_urls = $4, post_type = $5, status = $6, updated_at = NOW()
          WHERE id = $1 AND user_id = $2 RETURNING *`,
         [postId, userId, content, mediaUrls, postType, status]
       );
-      
+
       if (result.rows.length === 0) {
         throw new ApiError(StatusCodes.NOT_FOUND, 'Social post not found');
       }
-      
+
       res.status(StatusCodes.OK).json({
         success: true,
         data: result.rows[0],
@@ -246,16 +246,16 @@ export class SocialController {
       const userId = req.user.id;
       const { postId } = req.params;
       const pool = getPool();
-      
+
       const result = await pool.query(
         'UPDATE social_posts SET status = $3, updated_at = NOW() WHERE id = $1 AND user_id = $2 RETURNING *',
         [postId, userId, 'deleted']
       );
-      
+
       if (result.rows.length === 0) {
         throw new ApiError(StatusCodes.NOT_FOUND, 'Social post not found');
       }
-      
+
       res.status(StatusCodes.OK).json({
         success: true,
         data: result.rows[0],
@@ -274,30 +274,30 @@ export class SocialController {
       const userId = req.user.id;
       const { startDate, endDate, platformId } = req.query;
       const pool = getPool();
-      
+
       let query = `
         SELECT * FROM social_analytics 
         WHERE user_id = $1
       `;
       let params = [userId];
       let paramCount = 1;
-      
+
       if (platformId) {
         paramCount++;
         query += ` AND platform_id = $${paramCount}`;
         params.push(platformId);
       }
-      
+
       if (startDate && endDate) {
         paramCount++;
         query += ` AND date BETWEEN $${paramCount} AND $${paramCount + 1}`;
         params.push(startDate, endDate);
       }
-      
+
       query += ' ORDER BY date DESC';
-      
+
       const analytics = await pool.query(query, params);
-      
+
       res.status(StatusCodes.OK).json({
         success: true,
         data: analytics.rows
@@ -315,7 +315,7 @@ export class SocialController {
       const userId = req.user.id;
       const { limit = 50, offset = 0 } = req.query;
       const pool = getPool();
-      
+
       const rewards = await pool.query(
         `SELECT * FROM social_rewards 
          WHERE user_id = $1 
@@ -323,7 +323,7 @@ export class SocialController {
          LIMIT $2 OFFSET $3`,
         [userId, parseInt(limit), parseInt(offset)]
       );
-      
+
       res.status(StatusCodes.OK).json({
         success: true,
         data: rewards.rows,
@@ -344,14 +344,14 @@ export class SocialController {
   static async getSocialCampaigns(req, res, next) {
     try {
       const pool = getPool();
-      
+
       const campaigns = await pool.query(
         `SELECT * FROM social_campaigns 
          WHERE is_active = true 
          AND (end_date IS NULL OR end_date > NOW())
          ORDER BY created_at DESC`
       );
-      
+
       res.status(StatusCodes.OK).json({
         success: true,
         data: campaigns.rows
@@ -367,11 +367,11 @@ export class SocialController {
   static async getSocialPlatforms(req, res, next) {
     try {
       const pool = getPool();
-      
+
       const platforms = await pool.query(
         'SELECT * FROM social_platforms WHERE is_active = true ORDER BY name'
       );
-      
+
       res.status(StatusCodes.OK).json({
         success: true,
         data: platforms.rows
@@ -389,7 +389,7 @@ export class SocialController {
       const userId = req.user.id;
       const { autoPostEnabled, autoShareEnabled, notificationEnabled, privacyLevel, contentFilters, preferredPlatforms } = req.body;
       const pool = getPool();
-      
+
       const result = await pool.query(
         `INSERT INTO social_settings (
           user_id, auto_post_enabled, auto_share_enabled, notification_enabled, 
@@ -406,7 +406,7 @@ export class SocialController {
         RETURNING *`,
         [userId, autoPostEnabled, autoShareEnabled, notificationEnabled, privacyLevel, contentFilters, preferredPlatforms]
       );
-      
+
       res.status(StatusCodes.OK).json({
         success: true,
         data: result.rows[0],
@@ -424,25 +424,25 @@ export class SocialController {
     try {
       const userId = req.user.id;
       const pool = getPool();
-      
+
       const settings = await pool.query(
         'SELECT * FROM social_settings WHERE user_id = $1',
         [userId]
       );
-      
+
       if (settings.rows.length === 0) {
         // Create default settings
         const defaultSettings = await pool.query(
           `INSERT INTO social_settings (user_id) VALUES ($1) RETURNING *`,
           [userId]
         );
-        
+
         return res.status(StatusCodes.OK).json({
           success: true,
           data: defaultSettings.rows[0]
         });
       }
-      
+
       res.status(StatusCodes.OK).json({
         success: true,
         data: settings.rows[0]
@@ -460,40 +460,30 @@ export class SocialController {
       const userId = req.user.id;
       const { startDate, endDate, platformId, limit = 50, offset = 0 } = req.query;
       const pool = getPool();
-      
-      // Get transaction history with cashback details
-      const transactionHistory = await pool.query(
-        `SELECT 
-          ct.id,
-          ct.original_transaction_id,
-          ct.cashback_amount,
-          ct.cashback_percentage,
-          ct.status as transaction_status,
-          ct.created_at as transaction_date,
-          cc.campaign_name,
-          mb.business_name as merchant_name
-        FROM cashback_transactions ct
-        JOIN cashback_campaigns cc ON ct.campaign_id = cc.id
-        JOIN merchant_budgets mb ON ct.merchant_id = mb.merchant_id
-        WHERE ct.customer_id = $1
-        ${startDate ? 'AND ct.created_at >= $2' : ''}
-        ${endDate ? 'AND ct.created_at <= $3' : ''}
-        ORDER BY ct.created_at DESC
+
+      // Get social analytics data instead of cashback transactions
+      // Social service should not directly access cashback service tables
+      const socialAnalytics = await pool.query(
+        `SELECT * FROM social_analytics sa
+        WHERE sa.user_id = $1
+        ${startDate ? 'AND sa.created_at >= $2' : ''}
+        ${endDate ? 'AND sa.created_at <= $3' : ''}
+        ORDER BY sa.created_at DESC
         LIMIT $${startDate && endDate ? '4' : startDate || endDate ? '3' : '2'} OFFSET $${startDate && endDate ? '5' : startDate || endDate ? '4' : '3'}`,
         startDate && endDate ? [userId, startDate, endDate, limit, offset] :
-        startDate ? [userId, startDate, limit, offset] :
-        endDate ? [userId, endDate, limit, offset] :
-        [userId, limit, offset]
+          startDate ? [userId, startDate, limit, offset] :
+            endDate ? [userId, endDate, limit, offset] :
+              [userId, limit, offset]
       );
-      
+
       res.status(StatusCodes.OK).json({
         success: true,
         data: {
-          transactionHistory: transactionHistory.rows,
+          socialAnalytics: socialAnalytics.rows,
           pagination: {
             limit: parseInt(limit),
             offset: parseInt(offset),
-            count: transactionHistory.rows.length
+            count: socialAnalytics.rows.length
           }
         }
       });
@@ -510,7 +500,7 @@ export class SocialController {
       const userId = req.user.id;
       const { platformId, limit = 50, offset = 0 } = req.query;
       const pool = getPool();
-      
+
       // Calculate influencer scores: (Likes + Comments) / Followers
       const influencerScores = await pool.query(
         `SELECT 
@@ -547,7 +537,7 @@ export class SocialController {
         LIMIT $${platformId ? '3' : '2'} OFFSET $${platformId ? '4' : '3'}`,
         platformId ? [userId, platformId, limit, offset] : [userId, limit, offset]
       );
-      
+
       res.status(StatusCodes.OK).json({
         success: true,
         data: {
@@ -571,7 +561,7 @@ export class SocialController {
     try {
       const { platformId, limit = 100 } = req.query;
       const pool = getPool();
-      
+
       // Get real-time ranking across all users
       const ranking = await pool.query(
         `SELECT 
@@ -608,7 +598,7 @@ export class SocialController {
         LIMIT $${platformId ? '2' : '1'}`,
         platformId ? [platformId, limit] : [limit]
       );
-      
+
       res.status(StatusCodes.OK).json({
         success: true,
         data: {
@@ -629,7 +619,7 @@ export class SocialController {
       const userId = req.user.id;
       const { startDate, endDate } = req.query;
       const pool = getPool();
-      
+
       // Get comprehensive analytics
       const analytics = await pool.query(
         `SELECT 
@@ -655,11 +645,11 @@ export class SocialController {
         ${startDate ? 'AND ct.created_at >= $2' : ''}
         ${endDate ? 'AND ct.created_at <= $3' : ''}`,
         startDate && endDate ? [userId, startDate, endDate] :
-        startDate ? [userId, startDate] :
-        endDate ? [userId, endDate] :
-        [userId]
+          startDate ? [userId, startDate] :
+            endDate ? [userId, endDate] :
+              [userId]
       );
-      
+
       res.status(StatusCodes.OK).json({
         success: true,
         data: analytics.rows[0] || {}

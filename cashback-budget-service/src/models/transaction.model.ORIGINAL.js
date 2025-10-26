@@ -9,15 +9,9 @@ export class TransactionModel {
     const { page = 1, limit = 10, status, type, startDate, endDate } = options;
     const offset = (page - 1) * limit;
 
-    let query = 'SELECT * FROM cashback_transactions WHERE 1=1';
+    let query = 'SELECT * FROM transactions WHERE 1=1';
     const params = [];
     let paramCount = 0;
-
-    if (merchantId) {
-      paramCount++;
-      query +=  AND merchant_id = FINAL_FIX.js{paramCount};
-      params.push(merchantId);
-    }
 
     if (status) {
       paramCount++;
@@ -109,7 +103,7 @@ export class TransactionModel {
   static async process(id) {
     const pool = getPool();
     const result = await pool.query(
-      `UPDATE transactions SET status = 'processed', updated_at = NOW() WHERE id = $1 RETURNING *`,
+      `UPDATE transactions SET status = 'completed', updated_at = NOW() WHERE id = $1 RETURNING *`,
       [id]
     );
     return result.rows[0] || null;
@@ -120,17 +114,17 @@ export class TransactionModel {
    */
   static async getAnalytics(options = {}) {
     const pool = getPool();
-    const { startDate, endDate, type, merchantId } = options;
+    const { startDate, endDate, type } = options;
 
     let query = `
       SELECT 
         COUNT(*) as total_transactions,
-        SUM(CASE WHEN status = 'processed' THEN 1 ELSE 0 END) as completed,
+        SUM(CASE WHEN status = 'completed' THEN 1 ELSE 0 END) as completed,
         SUM(CASE WHEN status = 'pending' THEN 1 ELSE 0 END) as pending,
         SUM(CASE WHEN status = 'failed' THEN 1 ELSE 0 END) as failed,
-        SUM(CASE WHEN status = 'processed' THEN cashback_amount / (cashback_percentage / 100) ELSE 0 END) as total_volume,
-        ROUND(SUM(CASE WHEN status = 'processed' THEN 1 ELSE 0 END)::numeric / NULLIF(COUNT(*)::numeric, 0) * 100, 2) as success_rate
-      FROM cashback_transactions WHERE 1=1
+        SUM(CASE WHEN status = 'completed' THEN amount ELSE 0 END) as total_volume,
+        ROUND(SUM(CASE WHEN status = 'completed' THEN 1 ELSE 0 END)::numeric / NULLIF(COUNT(*)::numeric, 0) * 100, 2) as success_rate
+      FROM transactions WHERE 1=1
     `;
 
     const params = [];

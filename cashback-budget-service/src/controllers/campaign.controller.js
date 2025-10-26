@@ -22,7 +22,7 @@ export class CampaignController {
       };
 
       const campaign = await CampaignModel.create(campaignData);
-      
+
       res.status(201).json({
         success: true,
         data: campaign,
@@ -43,16 +43,28 @@ export class CampaignController {
    */
   static async getCampaigns(req, res) {
     try {
-      const { page = 1, limit = 10, status, budgetId } = req.query;
-      const options = {
-        page: parseInt(page),
-        limit: parseInt(limit),
-        status,
-        budgetId
-      };
+      console.log('📊 [CAMPAIGNS] Starting getCampaigns request');
 
-      const campaigns = await CampaignModel.findAll(options);
-      
+      // Validate request
+      const errors = validationResult(req);
+      if (!errors.isEmpty()) {
+        console.log('❌ [CAMPAIGNS] Validation errors:', errors.array());
+        return res.status(400).json({
+          success: false,
+          error: 'Validation failed',
+          details: errors.array()
+        });
+      }
+
+      const { page = 1, limit = 10, status, budgetId } = req.query;
+      console.log('📊 [CAMPAIGNS] Query params:', { page, limit, status, budgetId });
+      const offset = (parseInt(page) - 1) * parseInt(limit);
+
+      console.log('📊 [CAMPAIGNS] Calling getAllCampaigns with:', { limit: parseInt(limit), offset, status });
+      // Use the correct method that exists in the model
+      const campaigns = await CampaignModel.getAllCampaigns(parseInt(limit), offset, status);
+      console.log('📊 [CAMPAIGNS] Got campaigns result:', campaigns?.length || 0, 'campaigns');
+
       res.json({
         success: true,
         data: campaigns,
@@ -126,7 +138,7 @@ export class CampaignController {
       }
 
       const updatedCampaign = await CampaignModel.update(id, req.body);
-      
+
       res.json({
         success: true,
         data: updatedCampaign,
@@ -158,7 +170,7 @@ export class CampaignController {
       }
 
       await CampaignModel.delete(id);
-      
+
       res.json({
         success: true,
         message: 'Campaign deleted successfully'
@@ -189,7 +201,7 @@ export class CampaignController {
       }
 
       const activatedCampaign = await CampaignModel.activate(id);
-      
+
       res.json({
         success: true,
         data: activatedCampaign,
@@ -221,7 +233,7 @@ export class CampaignController {
       }
 
       const deactivatedCampaign = await CampaignModel.deactivate(id);
-      
+
       res.json({
         success: true,
         data: deactivatedCampaign,
@@ -253,7 +265,7 @@ export class CampaignController {
       }
 
       const analytics = await CampaignModel.getAnalytics(id);
-      
+
       res.json({
         success: true,
         data: analytics

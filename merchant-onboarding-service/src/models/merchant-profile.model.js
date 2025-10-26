@@ -79,6 +79,36 @@ export class MerchantProfileModel {
   }
 
   /**
+   * Create merchant profile from approved application
+   */
+  static async createProfileFromApplication(application) {
+    const pool = getPool();
+    const result = await pool.query(
+      `INSERT INTO merchant_profiles (
+        user_id, application_id, business_name, business_type, contact_person,
+        email, phone, business_address, business_license, tax_id,
+        bank_account_details, status, created_at, updated_at
+      ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, NOW(), NOW())
+      RETURNING *`,
+      [
+        application.user_id,
+        application.id,
+        application.business_name,
+        application.business_type,
+        application.contact_person,
+        application.email.toLowerCase(),
+        application.phone,
+        application.business_address,
+        application.business_license,
+        application.tax_id,
+        application.bank_account_details,
+        'active' // New profiles start as active
+      ]
+    );
+    return result.rows[0] || null;
+  }
+
+  /**
    * Update merchant profile status
    */
   static async updateProfileStatus(profileId, status, updatedBy = null) {
@@ -146,17 +176,31 @@ export class MerchantProfileModel {
    */
   static async getProfileStats() {
     const pool = getPool();
-    const result = await pool.query(
+
+    // Get aggregated stats
+    const statsResult = await pool.query(
       `SELECT 
-         status,
-         COUNT(*) as count,
-         business_type,
-         COUNT(*) as type_count
-       FROM merchant_profiles 
-       GROUP BY status, business_type
-       ORDER BY status, type_count DESC`
+         COUNT(*) as total_profiles,
+         COUNT(CASE WHEN status = 'active' THEN 1 END) as active_profiles,
+         COUNT(CASE WHEN status = 'inactive' THEN 1 END) as inactive_profiles,
+         COUNT(CASE WHEN status = 'suspended' THEN 1 END) as suspended_profiles
+       FROM merchant_profiles`
     );
-    return result.rows;
+
+    // Get business type breakdown
+    const typeResult = await pool.query(
+      `SELECT 
+         business_type,
+         COUNT(*) as count
+       FROM merchant_profiles 
+       GROUP BY business_type
+       ORDER BY count DESC`
+    );
+
+    return {
+      ...statsResult.rows[0],
+      business_types: typeResult.rows
+    };
   }
 
   /**
