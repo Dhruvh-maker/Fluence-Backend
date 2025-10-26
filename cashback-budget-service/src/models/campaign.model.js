@@ -142,26 +142,26 @@ export class CampaignModel {
   static async deleteCampaign(campaignId) {
     const pool = getPool();
     const client = await pool.connect();
-    
+
     try {
       await client.query('BEGIN');
-      
+
       // Check if campaign has transactions
       const transactionCheck = await client.query(
         'SELECT COUNT(*) as count FROM cashback_transactions WHERE campaign_id = $1',
         [campaignId]
       );
-      
+
       if (parseInt(transactionCheck.rows[0].count) > 0) {
         throw new Error('Cannot delete campaign with existing transactions');
       }
-      
+
       // Delete campaign
       const result = await client.query(
         'DELETE FROM cashback_campaigns WHERE id = $1 RETURNING *',
         [campaignId]
       );
-      
+
       await client.query('COMMIT');
       return result.rows[0] || null;
     } catch (error) {

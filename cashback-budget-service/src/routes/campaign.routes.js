@@ -36,13 +36,13 @@ const queryValidation = [
 ];
 
 // Routes
-router.post('/', verifyAuthToken, createCampaignValidation, CampaignController.createCampaign);
-router.get('/', verifyAuthToken, queryValidation, CampaignController.getCampaigns);
-router.get('/:id', verifyAuthToken, campaignIdValidation, CampaignController.getCampaignById);
-router.put('/:id', verifyAuthToken, updateCampaignValidation, CampaignController.updateCampaign);
-router.delete('/:id', verifyAuthToken, campaignIdValidation, CampaignController.deleteCampaign);
-router.post('/:id/activate', verifyAuthToken, campaignIdValidation, CampaignController.activateCampaign);
-router.post('/:id/deactivate', verifyAuthToken, campaignIdValidation, CampaignController.deactivateCampaign);
-router.get('/:id/analytics', verifyAuthToken, campaignIdValidation, CampaignController.getCampaignAnalytics);
+router.post('/', verifyAuthToken(), createCampaignValidation, CampaignController.createCampaign);
+router.get('/', verifyAuthToken(), queryValidation, CampaignController.getCampaigns);
+router.get('/:id', verifyAuthToken(), campaignIdValidation, CampaignController.getCampaignById);
+router.put('/:id', verifyAuthToken(), updateCampaignValidation, CampaignController.updateCampaign);
+router.delete('/:id', verifyAuthToken(), campaignIdValidation, CampaignController.deleteCampaign);
+router.post('/:id/activate', verifyAuthToken(), campaignIdValidation, CampaignController.activateCampaign);
+router.post('/:id/deactivate', verifyAuthToken(), campaignIdValidation, CampaignController.deactivateCampaign);
+router.get('/:id/analytics', verifyAuthToken(), campaignIdValidation, CampaignController.getCampaignAnalytics);
 
 export default router;

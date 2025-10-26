@@ -393,13 +393,19 @@ export class TransactionController {
       console.log('User ID:', req.user?.id);
 
       const { startDate, endDate, type } = req.query;
+
+      // For merchants, use their user ID as merchant_id
+      const merchantId = req.user?.id;
+
       const options = {
         startDate,
         endDate,
-        type
+        type,
+        merchantId
       };
 
       console.log('Fetching analytics with options:', JSON.stringify(options, null, 2));
+      console.log('Merchant ID:', merchantId);
 
       const analytics = await TransactionModel.getAnalytics(options);
 

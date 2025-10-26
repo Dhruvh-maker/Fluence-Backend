@@ -192,7 +192,35 @@ export class PointsTransactionModel {
     query += ' GROUP BY transaction_type ORDER BY transaction_type';
 
     const result = await pool.query(query, params);
-    return result.rows;
+
+    // Transform array to object with aggregated stats
+    const stats = {
+      total_transactions: 0,
+      total_earned: 0,
+      total_redeemed: 0,
+      earn_count: 0,
+      redeem_count: 0,
+      available_count: 0,
+      pending_count: 0,
+      expired_count: 0,
+      by_type: result.rows
+    };
+
+    result.rows.forEach(row => {
+      stats.total_transactions += parseInt(row.count) || 0;
+      if (row.transaction_type === 'earn') {
+        stats.total_earned = parseFloat(row.total_amount) || 0;
+        stats.earn_count = parseInt(row.count) || 0;
+      } else if (row.transaction_type === 'redeem') {
+        stats.total_redeemed = parseFloat(row.total_amount) || 0;
+        stats.redeem_count = parseInt(row.count) || 0;
+      }
+      stats.available_count += parseInt(row.available_count) || 0;
+      stats.pending_count += parseInt(row.pending_count) || 0;
+      stats.expired_count += parseInt(row.expired_count) || 0;
+    });
+
+    return stats;
   }
 
   /**
@@ -329,11 +357,11 @@ export class PointsTransactionModel {
       `SELECT available_balance FROM wallet_balances WHERE user_id = $1`,
       [userId]
     );
-    
+
     if (result.rows.length === 0) {
       return false;
     }
-    
+
     return result.rows[0].available_balance >= requiredAmount;
   }
 

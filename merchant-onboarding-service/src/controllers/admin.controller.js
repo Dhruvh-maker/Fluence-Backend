@@ -172,6 +172,27 @@ export async function updateApplicationStatus(req, res, next) {
     console.log('✅ [STATUS UPDATE] Database update successful');
     console.log('   Updated application:', JSON.stringify(updatedApplication, null, 2));
 
+    // Create merchant profile if application is approved
+    if (status === 'approved') {
+      console.log('✅ [STATUS UPDATE] Application approved - creating merchant profile');
+      try {
+        // Check if profile already exists
+        const existingProfile = await MerchantProfileModel.getProfileByApplicationId(applicationId);
+        if (existingProfile) {
+          console.log('ℹ️ [STATUS UPDATE] Profile already exists for this application');
+        } else {
+          const newProfile = await MerchantProfileModel.createProfileFromApplication(updatedApplication);
+          console.log('✅ [STATUS UPDATE] Merchant profile created successfully');
+          console.log('   Profile ID:', newProfile.id);
+          console.log('   User ID:', newProfile.user_id);
+        }
+      } catch (profileError) {
+        console.error('❌ [STATUS UPDATE] Failed to create merchant profile:', profileError.message);
+        console.error('   Error stack:', profileError.stack);
+        // Don't fail the approval if profile creation fails - admin can create it manually
+      }
+    }
+
     // Send appropriate notification
     try {
       if (status === 'approved') {
