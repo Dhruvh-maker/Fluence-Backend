@@ -37,7 +37,8 @@ const queryValidation = [
 
 // Routes
 router.post('/', verifyAuthToken(), createCampaignValidation, CampaignController.createCampaign);
-router.get('/', verifyAuthToken(), queryValidation, CampaignController.getCampaigns);
+// router.get('/', verifyAuthToken(), queryValidation, CampaignController.getCampaigns);
+router.get('/', queryValidation, CampaignController.getCampaigns);
 router.get('/:id', verifyAuthToken(), campaignIdValidation, CampaignController.getCampaignById);
 router.put('/:id', verifyAuthToken(), updateCampaignValidation, CampaignController.updateCampaign);
 router.delete('/:id', verifyAuthToken(), campaignIdValidation, CampaignController.deleteCampaign);
